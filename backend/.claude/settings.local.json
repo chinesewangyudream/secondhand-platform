@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd.exe /c netstat -an)",
+      "Bash(findstr :3306)",
+      "Bash(findstr :3307)",
+      "Bash(powershell *)",
+      "Bash(command *)",
+      "Bash(/c/Windows/System32/cmd.exe *)",
+      "Bash(timeout 2 bash -c \"echo > /dev/tcp/localhost/3307\")",
+      "Bash(timeout 15 ./mvnw spring-boot:run)",
+      "Bash(timeout 2 bash -c \"echo > /dev/tcp/localhost/8080\")",
+      "Bash(timeout 30 ./mvnw spring-boot:run)",
+      "Bash(tee /tmp/spring.log)",
+      "Bash(/mnt/c/Windows/System32/cmd.exe *)",
+      "Bash(timeout 2 bash *)",
+      "Bash(python *)",
+      "Bash(mysql *)",
+      "Bash(mvn *)",
+      "Bash(telnet localhost *)",
+      "Bash(nc *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/auth/login)",
+      "Bash(curl *)",
+      "Bash(mkdir -p src/main/java/com/secondhand/security)",
+      "Bash(mv src/main/java/com/secondhand/utils/JwtAuthenticationFilter.java src/main/java/com/secondhand/security/)",
+      "Bash(./mvnw compile *)",
+      "Bash(./mvnw spring-boot:run -q)",
+      "Bash(./mvnw spring-boot:run)",
+      "Bash(jps -l)",
+      "Bash(cmd *)",
+      "Bash(./mvnw clean *)",
+      "Bash(./mvnw spring-boot:run -DskipTests)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :8080)",
+      "Bash(tasklist)",
+      "Bash(cmd.exe *)",
+      "Bash(/mingw64/bin/curl *)",
+      "mcp__ide__getDiagnostics"
+    ]
+  }
+}

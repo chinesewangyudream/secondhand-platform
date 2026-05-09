@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8080/api/goods/list?page=1&size=12\" --connect-timeout 5)",
+      "Read(//c/Users/17208/Desktop/secondhand-platform/**)",
+      "Read(//d/secondhand-platform/backend/**)",
+      "Bash(mysql -h localhost -P 3307 -u root -p123456 -e \"USE secondhand_db; SHOW TABLES;\")",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -h localhost -P 3307 -u root -p123456 -e \"USE secondhand_db; SHOW TABLES;\")",
+      "Bash(\"/c/xampp/mysql/bin/mysql.exe\" -h localhost -P 3307 -u root -p123456 -e \"USE secondhand_db; SHOW TABLES;\")",
+      "Bash(\"/c/phpstudy_pro/Extensions/MySQL5.7/bin/mysql.exe\" -h localhost -P 3307 -u root -p123456 -e \"USE secondhand_db; SHOW TABLES;\")",
+      "Bash(\"/c/xampp/mysql/bin/mysql.exe\" -h localhost -P 3307 -u root -p123456 -e \"USE secondhand_db; DESC orders; DESC logistics; DESC goods;\")",
+      "Read(//c/Program Files/MySQL//**)",
+      "Read(//c/xampp/mysql/**)",
+      "Read(//c/phpstudy_pro/**)",
+      "Bash(\"/c/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -h localhost -P 3307 -u root -p123456 -e \"USE secondhand_db; DESC orders; DESC logistics; DESC goods;\")",
+      "Read(//d/secondhand-platform/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\17208\\Desktop\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\controller",
+      "c:\\Users\\17208\\Desktop\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\service",
+      "c:\\Users\\17208\\Desktop\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\exception",
+      "c:\\Users\\17208\\Desktop\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\dto",
+      "c:\\Users\\17208\\Desktop\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\entity",
+      "D:\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\dto",
+      "D:\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\controller",
+      "D:\\secondhand-platform\\backend\\src\\main\\resources",
+      "D:\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\entity",
+      "D:\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\service",
+      "D:\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\utils",
+      "D:\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\security",
+      "D:\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\config",
+      "D:\\secondhand-platform\\backend\\src\\main\\java\\com\\secondhand\\mapper",
+      "D:\\secondhand-platform"
+    ]
+  }
+}

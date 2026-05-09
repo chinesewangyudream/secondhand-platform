@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -v \"http://localhost:8080/api/goods/list?page=1&size=12\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8080/goods/list?page=1&size=12\" --connect-timeout 5)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8080/api/auth/login\" --connect-timeout 5 -X POST)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8080/api/uploads/\" --connect-timeout 5)",
+      "Bash(curl -i \"http://localhost:8080/api/goods/list?page=1&size=12\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8080/api/category/list\" --connect-timeout 5)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8080/api/goods/search\" --connect-timeout 5)",
+      "Read(//c/Users/17208/Desktop/secondhand-platform/backend/src/**)"
+    ]
+  }
+}
