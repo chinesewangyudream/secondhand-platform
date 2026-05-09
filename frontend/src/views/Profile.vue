@@ -4,20 +4,21 @@
     <div class="profile-container">
       <div class="profile-header">
         <div class="avatar-section">
-          <img :src="user.avatar" :alt="user.name" class="avatar" />
+          <img :src="avatarPreview || user.avatar || defaultAvatar" :alt="user.nickname" class="avatar" />
           <div class="upload-overlay" @click="triggerFileSelect">
-            <el-icon><Camera /></el-icon>
+            <el-icon v-if="!uploadingAvatar" :size="24"><Camera /></el-icon>
+            <el-icon v-else :size="24" class="is-loading"><Loading /></el-icon>
             <input
               ref="fileInput"
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/gif,image/webp"
               @change="handleAvatarChange"
               style="display: none"
             />
           </div>
         </div>
         <div class="user-info">
-          <h2>{{ user.name }}</h2>
+          <h2>{{ user.nickname || user.username }}</h2>
           <p class="user-id">ID: {{ user.id }}</p>
           <p class="join-date">加入时间: {{ formatDate(user.createdAt) }}</p>
         </div>
@@ -26,31 +27,33 @@
       <div class="profile-content">
         <el-tabs v-model="activeTab">
           <el-tab-pane label="基本信息" name="basic">
-            <el-form :model="profileForm" label-width="100px" class="profile-form">
-              <el-form-item label="昵称">
-                <el-input v-model="profileForm.name" />
+            <el-form
+              :model="profileForm"
+              :rules="profileRules"
+              ref="profileFormRef"
+              label-width="100px"
+              class="profile-form"
+            >
+              <el-form-item label="昵称" prop="nickname">
+                <el-input v-model="profileForm.nickname" placeholder="给自己取个名字" maxlength="20" show-word-limit />
               </el-form-item>
-              <el-form-item label="邮箱">
-                <el-input v-model="profileForm.email" />
+              <el-form-item label="真实姓名" prop="realName">
+                <el-input v-model="profileForm.realName" placeholder="选填，用于交易认证" />
               </el-form-item>
-              <el-form-item label="手机号">
-                <el-input v-model="profileForm.phone" />
+              <el-form-item label="邮箱" prop="email">
+                <el-input v-model="profileForm.email" placeholder="用于接收通知" />
               </el-form-item>
-              <el-form-item label="所在地">
-                <el-input v-model="profileForm.location" />
+              <el-form-item label="手机号" prop="phone">
+                <el-input v-model="profileForm.phone" placeholder="用于找回密码" maxlength="11" />
               </el-form-item>
-              <el-form-item label="个人简介">
-                <el-input
-                  v-model="profileForm.bio"
-                  type="textarea"
-                  :rows="4"
-                  placeholder="介绍一下自己..."
-                />
+              <el-form-item label="所在地" prop="address">
+                <el-input v-model="profileForm.address" placeholder="你所在的城市" />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="updateProfile" :loading="updating">
                   保存修改
                 </el-button>
+                <el-button @click="resetForm">重置</el-button>
               </el-form-item>
             </el-form>
           </el-tab-pane>
@@ -115,31 +118,49 @@
 import { ref, onMounted, reactive } from 'vue'
 import { useUserStore } from '@/store/user'
 import { authApi } from '@/api/auth'
-import { Camera } from '@element-plus/icons-vue'
+import { Camera, Loading } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+
+const defaultAvatar = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23667eea" width="100" height="100"/><text x="50" y="62" text-anchor="middle" fill="white" font-size="40">U</text></svg>')
 
 const userStore = useUserStore()
 const fileInput = ref()
+const profileFormRef = ref()
 const activeTab = ref('basic')
 const updating = ref(false)
+const uploadingAvatar = ref(false)
+const avatarPreview = ref('')
 const showPasswordDialog = ref(false)
 const changingPassword = ref(false)
 const passwordFormRef = ref()
 
 const user = ref({
   id: '',
-  name: '',
+  username: '',
+  nickname: '',
   avatar: '',
   createdAt: ''
 })
 
 const profileForm = reactive({
-  name: '',
+  nickname: '',
+  realName: '',
   email: '',
   phone: '',
-  location: '',
-  bio: ''
+  address: ''
 })
+
+const profileRules = {
+  nickname: [
+    { max: 20, message: '昵称最多20个字符', trigger: 'blur' }
+  ],
+  email: [
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+  ],
+  phone: [
+    { pattern: /^$|^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ]
+}
 
 const passwordForm = reactive({
   oldPassword: '',
@@ -178,7 +199,13 @@ async function loadUserProfile() {
   try {
     const res = await authApi.getProfile()
     user.value = res.data
-    Object.assign(profileForm, res.data)
+    Object.assign(profileForm, {
+      nickname: res.data.nickname || '',
+      realName: res.data.realName || '',
+      email: res.data.email || '',
+      phone: res.data.phone || '',
+      address: res.data.address || ''
+    })
   } catch (error) {
     ElMessage.error('加载用户信息失败')
   }
@@ -190,23 +217,81 @@ function triggerFileSelect() {
 
 async function handleAvatarChange(event) {
   const file = event.target.files[0]
-  if (file) {
-    // 处理头像上传
-    console.log('上传头像:', file)
+  if (!file) return
+
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    ElMessage.error('仅支持 PNG、JPG、GIF、WebP 格式的图片')
+    return
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 2MB')
+    return
+  }
+
+  avatarPreview.value = URL.createObjectURL(file)
+  uploadingAvatar.value = true
+
+  try {
+    const res = await authApi.uploadAvatar(file)
+    const avatarUrl = res.data
+    user.value.avatar = avatarUrl
+    syncStoreAvatar(avatarUrl)
+    ElMessage.success('头像更新成功')
+  } catch (error) {
+    ElMessage.error(error.showMessage || '头像上传失败')
+    avatarPreview.value = ''
+  } finally {
+    uploadingAvatar.value = false
+    if (fileInput.value) fileInput.value.value = ''
+  }
+}
+
+function syncStoreAvatar(avatarUrl) {
+  if (userStore.userInfo) {
+    userStore.userInfo.avatar = avatarUrl
+    localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
+  }
+}
+
+function syncStoreProfile(data) {
+  if (userStore.userInfo) {
+    if (data.nickname) userStore.userInfo.nickname = data.nickname
+    if (data.avatar) userStore.userInfo.avatar = data.avatar
+    localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
   }
 }
 
 async function updateProfile() {
-  updating.value = true
-  try {
-    await authApi.updateProfile(profileForm)
-    ElMessage.success('个人信息更新成功')
-    await loadUserProfile()
-  } catch (error) {
-    ElMessage.error('更新失败')
-  } finally {
-    updating.value = false
-  }
+  if (!profileFormRef.value) return
+
+  await profileFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    updating.value = true
+    try {
+      await authApi.updateProfile(profileForm)
+      ElMessage.success('个人信息更新成功')
+      await loadUserProfile()
+      syncStoreProfile(profileForm)
+    } catch (error) {
+      ElMessage.error(error.showMessage || '更新失败')
+    } finally {
+      updating.value = false
+    }
+  })
+}
+
+function resetForm() {
+  Object.assign(profileForm, {
+    nickname: user.value.nickname || '',
+    realName: user.value.realName || '',
+    email: user.value.email || '',
+    phone: user.value.phone || '',
+    address: user.value.address || ''
+  })
+  profileFormRef.value?.clearValidate()
 }
 
 async function changePassword() {
@@ -225,7 +310,7 @@ async function changePassword() {
           confirmPassword: ''
         })
       } catch (error) {
-        ElMessage.error('密码修改失败')
+        ElMessage.error(error.showMessage || '密码修改失败')
       } finally {
         changingPassword.value = false
       }
@@ -272,6 +357,7 @@ function formatDate(dateStr) {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid white;
+  background: rgba(255,255,255,0.2);
 }
 
 .upload-overlay {
@@ -292,6 +378,15 @@ function formatDate(dateStr) {
 
 .avatar-section:hover .upload-overlay {
   opacity: 1;
+}
+
+.upload-overlay .is-loading {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .user-info h2 {
