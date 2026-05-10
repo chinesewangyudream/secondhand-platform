@@ -69,6 +69,22 @@ public class AuthController {
         return Result.success("密码修改成功", null);
     }
 
+    @PutMapping("/phone")
+    public Result<?> changePhone(@RequestBody Map<String, String> body) {
+        String password = body.get("password");
+        String newPhone = body.get("newPhone");
+        userService.changePhone(SecurityUtils.getCurrentUserId(), password, newPhone);
+        return Result.success("手机号换绑成功", null);
+    }
+
+    @PutMapping("/email")
+    public Result<?> changeEmail(@RequestBody Map<String, String> body) {
+        String password = body.get("password");
+        String newEmail = body.get("newEmail");
+        userService.changeEmail(SecurityUtils.getCurrentUserId(), password, newEmail);
+        return Result.success("邮箱换绑成功", null);
+    }
+
     @PostMapping("/avatar")
     public Result<?> uploadAvatar(@RequestParam("file") MultipartFile file) {
         try {

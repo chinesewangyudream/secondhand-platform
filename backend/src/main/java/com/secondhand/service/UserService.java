@@ -130,4 +130,56 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         user.setPassword(passwordEncoder.encode(newPassword));
         updateById(user);
     }
+
+    /**
+     * 换绑手机号
+     */
+    public void changePhone(Long userId, String password, String newPhone) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在，请重新登录");
+        }
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BusinessException("密码错误，请重新输入");
+        }
+
+        if (newPhone == null || !newPhone.matches("^1[3-9]\\d{9}$")) {
+            throw new BusinessException("手机号格式不正确");
+        }
+
+        // 检查手机号是否已被其他用户绑定
+        if (lambdaQuery().eq(User::getPhone, newPhone).ne(User::getId, userId).count() > 0) {
+            throw new BusinessException("该手机号已被其他用户绑定");
+        }
+
+        user.setPhone(newPhone);
+        updateById(user);
+    }
+
+    /**
+     * 换绑邮箱
+     */
+    public void changeEmail(Long userId, String password, String newEmail) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在，请重新登录");
+        }
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BusinessException("密码错误，请重新输入");
+        }
+
+        if (newEmail == null || !newEmail.matches("^[\\w.-]+@[\\w.-]+\\.\\w+$")) {
+            throw new BusinessException("邮箱格式不正确");
+        }
+
+        // 检查邮箱是否已被其他用户绑定
+        if (lambdaQuery().eq(User::getEmail, newEmail).ne(User::getId, userId).count() > 0) {
+            throw new BusinessException("该邮箱已被其他用户绑定");
+        }
+
+        user.setEmail(newEmail);
+        updateById(user);
+    }
 }

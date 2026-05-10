@@ -74,13 +74,13 @@
                 <span class="message-time">{{ formatTime(msg.createdAt) }}</span>
                 <el-popconfirm
                   v-if="msg.isOwn"
-                  title="确定删除这条消息吗？"
+                  title="确定撤回这条消息吗？"
                   @confirm="deleteMessage(msg.id)"
-                  confirm-button-text="删除"
+                  confirm-button-text="撤回"
                   cancel-button-text="取消"
                 >
                   <template #reference>
-                    <el-button type="danger" size="small" text>删除</el-button>
+                    <el-button type="danger" size="small" text>撤回</el-button>
                   </template>
                 </el-popconfirm>
               </div>
@@ -466,7 +466,7 @@ async function deleteMessage(messageId) {
     // 刷新会话列表以更新最后消息
     await loadConversations()
   } catch (error) {
-    ElMessage.error(error.showMessage || '删除消息失败')
+    ElMessage.error(error.showMessage || '撤回消息失败')
   }
 }
 

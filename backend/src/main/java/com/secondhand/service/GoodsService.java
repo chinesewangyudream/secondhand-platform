@@ -22,6 +22,7 @@ import java.util.*;
 public class GoodsService extends ServiceImpl<GoodsMapper, Goods> {
 
     private final AuctionMapper auctionMapper;
+    private final GoodsMapper goodsMapper;
     private final AiPricingService aiPricingService;
     private final FavoriteMapper favoriteMapper;
 
@@ -95,6 +96,98 @@ public class GoodsService extends ServiceImpl<GoodsMapper, Goods> {
         }
 
         return goods.getId();
+    }
+
+    /**
+     * 搜索商品（多关键词 + 分类名称 + 地点 + 相关性排序）
+     */
+    public Page<Map<String, Object>> searchGoods(PageDTO dto) {
+        List<String> keywords = new ArrayList<>();
+        if (StringUtils.hasText(dto.getKeyword())) {
+            // 按空格拆分多个关键词
+            for (String kw : dto.getKeyword().trim().split("\\s+")) {
+                if (!kw.isEmpty()) {
+                    keywords.add(kw);
+                }
+            }
+        }
+
+        long offset = (long) (dto.getPage() - 1) * dto.getSize();
+        List<Map<String, Object>> records = goodsMapper.searchGoods(
+                keywords.isEmpty() ? null : keywords,
+                dto.getCategoryId(),
+                dto.getMinPrice() != null ? java.math.BigDecimal.valueOf(dto.getMinPrice()) : null,
+                dto.getMaxPrice() != null ? java.math.BigDecimal.valueOf(dto.getMaxPrice()) : null,
+                dto.getConditionLevel(),
+                offset,
+                dto.getSize()
+        );
+
+        long total = goodsMapper.searchGoodsCount(
+                keywords.isEmpty() ? null : keywords,
+                dto.getCategoryId(),
+                dto.getMinPrice() != null ? java.math.BigDecimal.valueOf(dto.getMinPrice()) : null,
+                dto.getMaxPrice() != null ? java.math.BigDecimal.valueOf(dto.getMaxPrice()) : null,
+                dto.getConditionLevel()
+        );
+
+        // 排序处理：如果有排序需求，在内存中重新排序
+        if (dto.getSortBy() != null && !keywords.isEmpty()) {
+            // 有搜索关键词时默认按相关性排序，但可以按价格重新排序
+            if ("price_asc".equals(dto.getSortBy())) {
+                records.sort((a, b) -> {
+                    java.math.BigDecimal pa = (java.math.BigDecimal) a.get("price");
+                    java.math.BigDecimal pb = (java.math.BigDecimal) b.get("price");
+                    return pa.compareTo(pb);
+                });
+            } else if ("price_desc".equals(dto.getSortBy())) {
+                records.sort((a, b) -> {
+                    java.math.BigDecimal pa = (java.math.BigDecimal) a.get("price");
+                    java.math.BigDecimal pb = (java.math.BigDecimal) b.get("price");
+                    return pb.compareTo(pa);
+                });
+            }
+        } else if (dto.getSortBy() != null && keywords.isEmpty()) {
+            // 无关键词时按指定排序
+            if ("price_asc".equals(dto.getSortBy())) {
+                records.sort((a, b) -> {
+                    java.math.BigDecimal pa = (java.math.BigDecimal) a.get("price");
+                    java.math.BigDecimal pb = (java.math.BigDecimal) b.get("price");
+                    return pa.compareTo(pb);
+                });
+            } else if ("price_desc".equals(dto.getSortBy())) {
+                records.sort((a, b) -> {
+                    java.math.BigDecimal pa = (java.math.BigDecimal) a.get("price");
+                    java.math.BigDecimal pb = (java.math.BigDecimal) b.get("price");
+                    return pb.compareTo(pa);
+                });
+            }
+        }
+
+        // 解析图片JSON
+        for (Map<String, Object> map : records) {
+            parseImages(map);
+        }
+
+        Page<Map<String, Object>> resultPage = new Page<>(dto.getPage(), dto.getSize(), total);
+        resultPage.setRecords(records);
+        return resultPage;
+    }
+
+    private void parseImages(Map<String, Object> map) {
+        Object imagesObj = map.get("images");
+        List<String> images = new ArrayList<>();
+        if (imagesObj != null) {
+            String imagesStr = imagesObj.toString();
+            if (!imagesStr.isEmpty()) {
+                try {
+                    images = JSON.parseArray(imagesStr, String.class);
+                } catch (Exception e) {
+                    images.add(imagesStr);
+                }
+            }
+        }
+        map.put("images", images);
     }
 
     /**

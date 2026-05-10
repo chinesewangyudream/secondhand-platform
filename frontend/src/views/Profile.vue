@@ -19,6 +19,7 @@
         </div>
         <div class="user-info">
           <h2>{{ user.nickname || user.username }}</h2>
+          <p class="user-username">@{{ user.username }}</p>
           <p class="user-id">ID: {{ user.id }}</p>
           <p class="join-date">加入时间: {{ formatDate(user.createdAt) }}</p>
         </div>
@@ -40,12 +41,6 @@
               <el-form-item label="真实姓名" prop="realName">
                 <el-input v-model="profileForm.realName" placeholder="选填，用于交易认证" />
               </el-form-item>
-              <el-form-item label="邮箱" prop="email">
-                <el-input v-model="profileForm.email" placeholder="用于接收通知" />
-              </el-form-item>
-              <el-form-item label="手机号" prop="phone">
-                <el-input v-model="profileForm.phone" placeholder="用于找回密码" maxlength="11" />
-              </el-form-item>
               <el-form-item label="所在地" prop="address">
                 <el-input v-model="profileForm.address" placeholder="你所在的城市" />
               </el-form-item>
@@ -60,12 +55,47 @@
 
           <el-tab-pane label="账号安全" name="security">
             <div class="security-section">
+              <!-- 绑定手机号 -->
               <div class="security-item">
                 <div class="item-header">
-                  <span>修改密码</span>
-                  <el-button type="text" @click="showPasswordDialog = true">
-                    修改
-                  </el-button>
+                  <div class="item-left">
+                    <el-icon class="item-icon"><Phone /></el-icon>
+                    <span>手机号</span>
+                  </div>
+                  <div class="item-right">
+                    <span class="item-value">{{ maskPhone(user.phone) }}</span>
+                    <el-button type="text" @click="openPhoneDialog">{{ user.phone ? '更换' : '绑定' }}</el-button>
+                  </div>
+                </div>
+                <p class="item-desc">绑定手机号可用于找回密码和接收通知</p>
+              </div>
+
+              <!-- 绑定邮箱 -->
+              <div class="security-item">
+                <div class="item-header">
+                  <div class="item-left">
+                    <el-icon class="item-icon"><Message /></el-icon>
+                    <span>邮箱</span>
+                  </div>
+                  <div class="item-right">
+                    <span class="item-value">{{ maskEmail(user.email) }}</span>
+                    <el-button type="text" @click="openEmailDialog">{{ user.email ? '更换' : '绑定' }}</el-button>
+                  </div>
+                </div>
+                <p class="item-desc">绑定邮箱可用于找回密码和接收重要通知</p>
+              </div>
+
+              <!-- 修改密码 -->
+              <div class="security-item">
+                <div class="item-header">
+                  <div class="item-left">
+                    <el-icon class="item-icon"><Lock /></el-icon>
+                    <span>登录密码</span>
+                  </div>
+                  <div class="item-right">
+                    <span class="item-value">已设置</span>
+                    <el-button type="text" @click="showPasswordDialog = true">修改</el-button>
+                  </div>
                 </div>
                 <p class="item-desc">定期修改密码可以保护账号安全</p>
               </div>
@@ -76,39 +106,59 @@
     </div>
 
     <!-- 修改密码对话框 -->
-    <el-dialog
-      v-model="showPasswordDialog"
-      title="修改密码"
-      width="400px"
-    >
-      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef">
+    <el-dialog v-model="showPasswordDialog" title="修改密码" width="420px" @close="resetPasswordForm">
+      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
         <el-form-item label="当前密码" prop="oldPassword">
-          <el-input
-            v-model="passwordForm.oldPassword"
-            type="password"
-            show-password
-          />
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password placeholder="请输入当前密码" />
         </el-form-item>
         <el-form-item label="新密码" prop="newPassword">
-          <el-input
-            v-model="passwordForm.newPassword"
-            type="password"
-            show-password
-          />
+          <el-input v-model="passwordForm.newPassword" type="password" show-password placeholder="至少6位" />
         </el-form-item>
-        <el-form-item label="确认新密码" prop="confirmPassword">
-          <el-input
-            v-model="passwordForm.confirmPassword"
-            type="password"
-            show-password
-          />
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showPasswordDialog = false">取消</el-button>
-        <el-button type="primary" @click="changePassword" :loading="changingPassword">
-          确定
-        </el-button>
+        <el-button type="primary" @click="changePassword" :loading="changingPassword">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 换绑手机号对话框 -->
+    <el-dialog v-model="showPhoneDialog" title="换绑手机号" width="420px" @close="resetPhoneForm">
+      <el-form :model="phoneForm" :rules="phoneFormRules" ref="phoneFormRef" label-width="100px">
+        <el-form-item label="当前手机号">
+          <span class="current-value">{{ maskPhone(user.phone) || '未绑定' }}</span>
+        </el-form-item>
+        <el-form-item label="新手机号" prop="newPhone">
+          <el-input v-model="phoneForm.newPhone" placeholder="请输入新手机号" maxlength="11" />
+        </el-form-item>
+        <el-form-item label="登录密码" prop="password">
+          <el-input v-model="phoneForm.password" type="password" show-password placeholder="请输入登录密码以验证身份" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showPhoneDialog = false">取消</el-button>
+        <el-button type="primary" @click="changePhone" :loading="changingPhone">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 换绑邮箱对话框 -->
+    <el-dialog v-model="showEmailDialog" title="换绑邮箱" width="420px" @close="resetEmailForm">
+      <el-form :model="emailForm" :rules="emailFormRules" ref="emailFormRef" label-width="100px">
+        <el-form-item label="当前邮箱">
+          <span class="current-value">{{ maskEmail(user.email) || '未绑定' }}</span>
+        </el-form-item>
+        <el-form-item label="新邮箱" prop="newEmail">
+          <el-input v-model="emailForm.newEmail" placeholder="请输入新邮箱地址" />
+        </el-form-item>
+        <el-form-item label="登录密码" prop="password">
+          <el-input v-model="emailForm.password" type="password" show-password placeholder="请输入登录密码以验证身份" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEmailDialog = false">取消</el-button>
+        <el-button type="primary" @click="changeEmail" :loading="changingEmail">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -118,7 +168,7 @@
 import { ref, onMounted, reactive } from 'vue'
 import { useUserStore } from '@/store/user'
 import { authApi } from '@/api/auth'
-import { Camera, Loading } from '@element-plus/icons-vue'
+import { Camera, Loading, Phone, Message, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const defaultAvatar = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23667eea" width="100" height="100"/><text x="50" y="62" text-anchor="middle" fill="white" font-size="40">U</text></svg>')
@@ -126,39 +176,40 @@ const defaultAvatar = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="ht
 const userStore = useUserStore()
 const fileInput = ref()
 const profileFormRef = ref()
+const passwordFormRef = ref()
+const phoneFormRef = ref()
+const emailFormRef = ref()
+
 const activeTab = ref('basic')
 const updating = ref(false)
 const uploadingAvatar = ref(false)
 const avatarPreview = ref('')
 const showPasswordDialog = ref(false)
 const changingPassword = ref(false)
-const passwordFormRef = ref()
+const showPhoneDialog = ref(false)
+const changingPhone = ref(false)
+const showEmailDialog = ref(false)
+const changingEmail = ref(false)
 
 const user = ref({
   id: '',
   username: '',
   nickname: '',
   avatar: '',
+  phone: '',
+  email: '',
   createdAt: ''
 })
 
 const profileForm = reactive({
   nickname: '',
   realName: '',
-  email: '',
-  phone: '',
   address: ''
 })
 
 const profileRules = {
   nickname: [
     { max: 20, message: '昵称最多20个字符', trigger: 'blur' }
-  ],
-  email: [
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-  ],
-  phone: [
-    { pattern: /^$|^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ]
 }
 
@@ -191,6 +242,36 @@ const passwordRules = {
   ]
 }
 
+const phoneForm = reactive({
+  newPhone: '',
+  password: ''
+})
+
+const phoneFormRules = {
+  newPhone: [
+    { required: true, message: '请输入新手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入登录密码', trigger: 'blur' }
+  ]
+}
+
+const emailForm = reactive({
+  newEmail: '',
+  password: ''
+})
+
+const emailFormRules = {
+  newEmail: [
+    { required: true, message: '请输入新邮箱', trigger: 'blur' },
+    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入登录密码', trigger: 'blur' }
+  ]
+}
+
 onMounted(async () => {
   await loadUserProfile()
 })
@@ -202,8 +283,6 @@ async function loadUserProfile() {
     Object.assign(profileForm, {
       nickname: res.data.nickname || '',
       realName: res.data.realName || '',
-      email: res.data.email || '',
-      phone: res.data.phone || '',
       address: res.data.address || ''
     })
   } catch (error) {
@@ -237,7 +316,7 @@ async function handleAvatarChange(event) {
     const res = await authApi.uploadAvatar(file)
     const avatarUrl = res.data
     user.value.avatar = avatarUrl
-    syncStoreAvatar(avatarUrl)
+    syncStore({ avatar: avatarUrl })
     ElMessage.success('头像更新成功')
   } catch (error) {
     ElMessage.error(error.showMessage || '头像上传失败')
@@ -248,17 +327,10 @@ async function handleAvatarChange(event) {
   }
 }
 
-function syncStoreAvatar(avatarUrl) {
+function syncStore(data) {
   if (userStore.userInfo) {
-    userStore.userInfo.avatar = avatarUrl
-    localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
-  }
-}
-
-function syncStoreProfile(data) {
-  if (userStore.userInfo) {
-    if (data.nickname) userStore.userInfo.nickname = data.nickname
-    if (data.avatar) userStore.userInfo.avatar = data.avatar
+    if (data.nickname !== undefined) userStore.userInfo.nickname = data.nickname
+    if (data.avatar !== undefined) userStore.userInfo.avatar = data.avatar
     localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
   }
 }
@@ -274,7 +346,7 @@ async function updateProfile() {
       await authApi.updateProfile(profileForm)
       ElMessage.success('个人信息更新成功')
       await loadUserProfile()
-      syncStoreProfile(profileForm)
+      syncStore({ nickname: profileForm.nickname })
     } catch (error) {
       ElMessage.error(error.showMessage || '更新失败')
     } finally {
@@ -287,35 +359,108 @@ function resetForm() {
   Object.assign(profileForm, {
     nickname: user.value.nickname || '',
     realName: user.value.realName || '',
-    email: user.value.email || '',
-    phone: user.value.phone || '',
     address: user.value.address || ''
   })
   profileFormRef.value?.clearValidate()
+}
+
+function openPhoneDialog() {
+  Object.assign(phoneForm, { newPhone: '', password: '' })
+  phoneFormRef.value?.clearValidate()
+  showPhoneDialog.value = true
+}
+
+function openEmailDialog() {
+  Object.assign(emailForm, { newEmail: '', password: '' })
+  emailFormRef.value?.clearValidate()
+  showEmailDialog.value = true
+}
+
+function resetPasswordForm() {
+  Object.assign(passwordForm, { oldPassword: '', newPassword: '', confirmPassword: '' })
+  passwordFormRef.value?.clearValidate()
+}
+
+function resetPhoneForm() {
+  Object.assign(phoneForm, { newPhone: '', password: '' })
+  phoneFormRef.value?.clearValidate()
+}
+
+function resetEmailForm() {
+  Object.assign(emailForm, { newEmail: '', password: '' })
+  emailFormRef.value?.clearValidate()
 }
 
 async function changePassword() {
   if (!passwordFormRef.value) return
 
   await passwordFormRef.value.validate(async (valid) => {
-    if (valid) {
-      changingPassword.value = true
-      try {
-        await authApi.changePassword(passwordForm)
-        ElMessage.success('密码修改成功')
-        showPasswordDialog.value = false
-        Object.assign(passwordForm, {
-          oldPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        })
-      } catch (error) {
-        ElMessage.error(error.showMessage || '密码修改失败')
-      } finally {
-        changingPassword.value = false
-      }
+    if (!valid) return
+
+    changingPassword.value = true
+    try {
+      await authApi.changePassword(passwordForm)
+      ElMessage.success('密码修改成功')
+      showPasswordDialog.value = false
+    } catch (error) {
+      ElMessage.error(error.showMessage || '密码修改失败')
+    } finally {
+      changingPassword.value = false
     }
   })
+}
+
+async function changePhone() {
+  if (!phoneFormRef.value) return
+
+  await phoneFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    changingPhone.value = true
+    try {
+      await authApi.changePhone({ password: phoneForm.password, newPhone: phoneForm.newPhone })
+      ElMessage.success('手机号换绑成功')
+      showPhoneDialog.value = false
+      await loadUserProfile()
+    } catch (error) {
+      ElMessage.error(error.showMessage || '换绑失败')
+    } finally {
+      changingPhone.value = false
+    }
+  })
+}
+
+async function changeEmail() {
+  if (!emailFormRef.value) return
+
+  await emailFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    changingEmail.value = true
+    try {
+      await authApi.changeEmail({ password: emailForm.password, newEmail: emailForm.newEmail })
+      ElMessage.success('邮箱换绑成功')
+      showEmailDialog.value = false
+      await loadUserProfile()
+    } catch (error) {
+      ElMessage.error(error.showMessage || '换绑失败')
+    } finally {
+      changingEmail.value = false
+    }
+  })
+}
+
+function maskPhone(phone) {
+  if (!phone) return ''
+  return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+}
+
+function maskEmail(email) {
+  if (!email) return ''
+  const [name, domain] = email.split('@')
+  if (!domain) return email
+  const visible = name.length <= 2 ? name[0] : name.slice(0, 2)
+  return visible + '***@' + domain
 }
 
 function formatDate(dateStr) {
@@ -390,8 +535,14 @@ function formatDate(dateStr) {
 }
 
 .user-info h2 {
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   font-size: 24px;
+}
+
+.user-username {
+  margin: 0 0 4px 0;
+  opacity: 0.7;
+  font-size: 14px;
 }
 
 .user-id, .join-date {
@@ -417,6 +568,10 @@ function formatDate(dateStr) {
   border-bottom: 1px solid #f0f0f0;
 }
 
+.security-item:last-child {
+  border-bottom: none;
+}
+
 .item-header {
   display: flex;
   justify-content: space-between;
@@ -424,9 +579,38 @@ function formatDate(dateStr) {
   margin-bottom: 8px;
 }
 
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.item-icon {
+  color: #667eea;
+  font-size: 18px;
+}
+
+.item-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.item-value {
+  color: #999;
+  font-size: 14px;
+}
+
 .item-desc {
+  color: #999;
+  font-size: 13px;
+  margin: 0;
+  padding-left: 26px;
+}
+
+.current-value {
   color: #666;
   font-size: 14px;
-  margin: 0;
 }
 </style>

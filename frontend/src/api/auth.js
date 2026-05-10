@@ -6,6 +6,8 @@ export const authApi = {
   getProfile: () => request.get('/auth/profile'),
   updateProfile: (data) => request.put('/auth/profile', data),
   changePassword: (data) => request.put('/auth/password', data),
+  changePhone: (data) => request.put('/auth/phone', data),
+  changeEmail: (data) => request.put('/auth/email', data),
   uploadAvatar: (file) => {
     const formData = new FormData()
     formData.append('file', file)

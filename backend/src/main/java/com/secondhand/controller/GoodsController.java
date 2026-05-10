@@ -44,7 +44,7 @@ public class GoodsController {
      */
     @GetMapping("/search")
     public Result<?> search(PageDTO dto) {
-        return Result.success(goodsService.getGoodsList(dto));
+        return Result.success(goodsService.searchGoods(dto));
     }
 
     /**

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.secondhand.mapper.GoodsMapper">
+
+    <select id="searchGoods" resultType="java.util.Map">
+        SELECT g.id, g.title, g.description,
+               g.category_id AS categoryId, g.seller_id AS sellerId,
+               g.price, g.original_price AS originalPrice,
+               g.condition_level AS conditionLevel, g.images,
+               g.location, g.status, g.view_count AS viewCount,
+               g.favorite_count AS favoriteCount,
+               g.is_auction AS isAuction,
+               g.ai_estimated_price AS aiEstimatedPrice,
+               g.created_at AS createdAt, g.updated_at AS updatedAt,
+               <if test="keywords != null and keywords.size() > 0">
+                   <foreach collection="keywords" item="kw" separator="+">
+                       (CASE WHEN g.title LIKE CONCAT('%',#{kw},'%') THEN 10 ELSE 0 END
+                       + CASE WHEN c.name LIKE CONCAT('%',#{kw},'%') THEN 6 ELSE 0 END
+                       + CASE WHEN g.description LIKE CONCAT('%',#{kw},'%') THEN 3 ELSE 0 END
+                       + CASE WHEN g.location LIKE CONCAT('%',#{kw},'%') THEN 2 ELSE 0 END)
+                   </foreach> AS relevance
+               </if>
+               <if test="keywords == null or keywords.size() == 0">
+                   0 AS relevance
+               </if>
+        FROM goods g
+        LEFT JOIN categories c ON g.category_id = c.id
+        WHERE g.status IN (1, 4)
+        <if test="keywords != null and keywords.size() > 0">
+            AND (
+                <foreach collection="keywords" item="kw" separator=" OR ">
+                    (g.title LIKE CONCAT('%',#{kw},'%')
+                    OR g.description LIKE CONCAT('%',#{kw},'%')
+                    OR g.location LIKE CONCAT('%',#{kw},'%')
+                    OR c.name LIKE CONCAT('%',#{kw},'%'))
+                </foreach>
+            )
+        </if>
+        <if test="categoryId != null">
+            AND g.category_id = #{categoryId}
+        </if>
+        <if test="minPrice != null">
+            AND g.price &gt;= #{minPrice}
+        </if>
+        <if test="maxPrice != null">
+            AND g.price &lt;= #{maxPrice}
+        </if>
+        <if test="conditionLevel != null">
+            AND g.condition_level &gt;= #{conditionLevel}
+        </if>
+        ORDER BY relevance DESC, g.created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="searchGoodsCount" resultType="long">
+        SELECT COUNT(*)
+        FROM goods g
+        LEFT JOIN categories c ON g.category_id = c.id
+        WHERE g.status IN (1, 4)
+        <if test="keywords != null and keywords.size() > 0">
+            AND (
+                <foreach collection="keywords" item="kw" separator=" OR ">
+                    (g.title LIKE CONCAT('%',#{kw},'%')
+                    OR g.description LIKE CONCAT('%',#{kw},'%')
+                    OR g.location LIKE CONCAT('%',#{kw},'%')
+                    OR c.name LIKE CONCAT('%',#{kw},'%'))
+                </foreach>
+            )
+        </if>
+        <if test="categoryId != null">
+            AND g.category_id = #{categoryId}
+        </if>
+        <if test="minPrice != null">
+            AND g.price &gt;= #{minPrice}
+        </if>
+        <if test="maxPrice != null">
+            AND g.price &lt;= #{maxPrice}
+        </if>
+        <if test="conditionLevel != null">
+            AND g.condition_level &gt;= #{conditionLevel}
+        </if>
+    </select>
+
+</mapper>
